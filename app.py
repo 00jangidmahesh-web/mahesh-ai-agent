@@ -11,9 +11,10 @@ from ai_agent import get_ai_response, clear_conversation
 # =====================================================
 # PAGE CONFIG
 # =====================================================
+
 st.set_page_config(
     page_title="Mahesh AI Assistant",
-    page_icon="🎤",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -21,58 +22,125 @@ st.set_page_config(
 # =====================================================
 # CUSTOM CSS
 # =====================================================
+
 st.markdown("""
 <style>
+
+/* ================= MAIN ================= */
+
+html, body, [class*="css"]{
+    font-family: 'Inter', sans-serif;
+}
+
+.stApp{
+    background-color: #0b1120;
+    color: white;
+}
+
+/* ================= CONTAINER ================= */
 
 .block-container{
     padding-top: 2rem;
     padding-bottom: 1rem;
-    max-width: 900px;
+    max-width: 950px;
 }
 
-.stChatMessage{
-    border-radius: 16px;
-    padding: 12px;
-    margin-bottom: 10px;
-}
-
-.stAudioInput{
-    border-radius: 14px;
-    padding: 10px;
-    border: 1px solid #dcdcdc;
-}
+/* ================= TITLES ================= */
 
 .main-title{
-    font-size: 2.4rem;
-    font-weight: 700;
+    font-size: 3rem;
+    font-weight: 800;
     margin-bottom: 0;
+    color: white;
+    letter-spacing: -1px;
 }
 
 .sub-text{
-    color: #6b7280;
+    color: #94a3b8;
     font-size: 1rem;
-    margin-top: -5px;
-}
-
-.info-box{
-    background-color: #f8fafc;
-    border: 1px solid #e5e7eb;
-    padding: 14px;
-    border-radius: 12px;
-    margin-top: 15px;
+    margin-top: -4px;
     margin-bottom: 20px;
 }
 
-.footer-text{
-    text-align:center;
-    color:gray;
-    font-size:0.85rem;
-    margin-top:30px;
+/* ================= INFO BOX ================= */
+
+.info-box{
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 18px;
+    border-radius: 18px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #d1d5db;
+    backdrop-filter: blur(10px);
 }
 
+/* ================= CHAT ================= */
+
+.stChatMessage{
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ================= AUDIO ================= */
+
+.stAudioInput{
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+/* ================= BUTTON ================= */
+
 .stButton>button{
-    border-radius: 10px;
-    height: 42px;
+    border-radius: 12px;
+    height: 44px;
+    width: 100%;
+    border: none;
+    background: #7c3aed;
+    color: white;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.stButton>button:hover{
+    background: #6d28d9;
+    transform: scale(1.02);
+}
+
+/* ================= INPUT ================= */
+
+.stTextInput input{
+    border-radius: 14px !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    background-color: rgba(255,255,255,0.03) !important;
+    color: white !important;
+}
+
+/* ================= TOGGLE ================= */
+
+.stToggle{
+    padding-top: 8px;
+}
+
+/* ================= FOOTER ================= */
+
+.footer-text{
+    text-align: center;
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 35px;
+}
+
+/* ================= SIDEBAR ================= */
+
+section[data-testid="stSidebar"]{
+    background-color: #0f172a;
+    border-right: 1px solid rgba(255,255,255,0.06);
 }
 
 </style>
@@ -81,24 +149,35 @@ st.markdown("""
 # =====================================================
 # OPENAI CLIENT
 # =====================================================
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =====================================================
 # SIDEBAR
 # =====================================================
+
 with st.sidebar:
 
-    st.title("Mahesh AI ")   # graduation cap emoji
+    st.title("🤖 Mahesh AI")
 
-    if st.button("Clear Conversation", use_container_width=True):
+    st.markdown("### Voice Assistant")
+
+    st.divider()
+
+    if st.button("🗑️ Clear Conversation", use_container_width=True):
+
         clear_conversation()
+
         st.session_state.history = []
         st.session_state.last_input = ""
+
         st.rerun()
 
     st.divider()
 
     st.markdown("""
+    ### 👨‍💻 About Me
+
     **Mahesh Kumar Jangid**  
     MSc Mathematics & Computing  
     IIT ISM Dhanbad
@@ -107,6 +186,7 @@ with st.sidebar:
 # =====================================================
 # SESSION STATE
 # =====================================================
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -116,15 +196,16 @@ if "last_input" not in st.session_state:
 if "processing" not in st.session_state:
     st.session_state.processing = False
 
-if "chat_mode" not in st.session_state:
-    st.session_state.chat_mode = False
-
 # =====================================================
 # HEADER
 # =====================================================
+
 st.markdown(
     """
-    <div class="main-title">Mahesh AI Assistant 🤖</div>   <!-- robot emoji -->
+    <div class="main-title">
+        Mahesh AI Assistant 🤖
+    </div>
+
     <div class="sub-text">
         AI Voice Assistant • IIT ISM Dhanbad
     </div>
@@ -135,8 +216,8 @@ st.markdown(
 st.markdown(
     """
     <div class="info-box">
-    Ask questions about my projects, background, skills, AI work, or experience.
-    You can interact using voice or text.
+        Ask questions about my projects, background, skills, AI work, or experience.
+        You can interact using voice or text.
     </div>
     """,
     unsafe_allow_html=True
@@ -145,25 +226,29 @@ st.markdown(
 # =====================================================
 # MODE TOGGLE
 # =====================================================
+
 mode_col1, mode_col2 = st.columns([1, 4])
 
 with mode_col1:
+
     chat_mode = st.toggle(
         "Chat Mode",
         value=False
     )
 
 with mode_col2:
+
     if chat_mode:
-        st.caption("Text Input Enabled")
+        st.caption("💬 Text Input Enabled")
     else:
-        st.caption("Voice Input Enabled")
+        st.caption("🎤 Voice Input Enabled")
 
 st.divider()
 
 # =====================================================
 # GENERATE RESPONSE
 # =====================================================
+
 def generate_response(user_input: str):
 
     if not user_input:
@@ -178,12 +263,14 @@ def generate_response(user_input: str):
     with st.spinner("Generating response..."):
 
         try:
+
             ai_response = get_ai_response(user_input)
 
             if not ai_response:
                 ai_response = "Unable to generate response."
 
         except Exception as e:
+
             ai_response = f"Error: {str(e)}"
 
     st.session_state.history.append(("You", user_input))
@@ -196,6 +283,7 @@ def generate_response(user_input: str):
 # =====================================================
 # TEXT TO SPEECH
 # =====================================================
+
 def text_to_speech(text: str):
 
     if not text:
@@ -222,15 +310,17 @@ def text_to_speech(text: str):
         return speech_path
 
     except Exception as e:
+
         st.warning(f"TTS Error: {e}")
         return None
 
 # =====================================================
 # VOICE MODE
 # =====================================================
+
 if not chat_mode:
 
-    st.subheader("🎤 Voice Input")   # microphone emoji added here
+    st.subheader("🎤 Voice Input")
 
     audio = st.audio_input("Speak")
 
@@ -268,14 +358,16 @@ if not chat_mode:
                             st.audio(speech_file, format="audio/mp3")
 
             except Exception as e:
+
                 st.error(f"Transcription Error: {e}")
 
 # =====================================================
 # CHAT MODE
 # =====================================================
+
 else:
 
-    st.subheader("Text Input")
+    st.subheader("💬 Text Input")
 
     user_text = st.text_input(
         "Ask something",
@@ -298,9 +390,10 @@ else:
 # =====================================================
 # CHAT HISTORY
 # =====================================================
+
 st.divider()
 
-st.subheader("Conversation")
+st.subheader("🧠 Conversation")
 
 if not st.session_state.history:
 
@@ -323,22 +416,29 @@ else:
 # =====================================================
 # AUTO SCROLL
 # =====================================================
+
 st.markdown("""
 <script>
-    var elements = window.parent.document.querySelectorAll('.stChatMessage');
-    if(elements.length) {
-        elements[elements.length-1].scrollIntoView({behavior: 'smooth'});
-    }
+
+var elements = window.parent.document.querySelectorAll('.stChatMessage');
+
+if(elements.length) {
+    elements[elements.length-1].scrollIntoView({
+        behavior: 'smooth'
+    });
+}
+
 </script>
 """, unsafe_allow_html=True)
 
 # =====================================================
 # FOOTER
 # =====================================================
+
 st.markdown(
     """
     <div class="footer-text">
-    Built with Streamlit + OpenAI
+        Built with Streamlit + OpenAI
     </div>
     """,
     unsafe_allow_html=True
