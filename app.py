@@ -196,11 +196,12 @@ if "last_input" not in st.session_state:
 if "processing" not in st.session_state:
     st.session_state.processing = False
 
-# --- New voice preview states ---
 if "audio_preview_active" not in st.session_state:
     st.session_state.audio_preview_active = False
+
 if "recorded_audio" not in st.session_state:
     st.session_state.recorded_audio = None
+
 if "audio_input_key" not in st.session_state:
     st.session_state.audio_input_key = 0
 
@@ -315,6 +316,9 @@ def text_to_speech(text: str):
 
                 response.stream_to_file(speech_path)
 
+        if not os.path.exists(speech_path):
+            return None
+
         return speech_path
 
     except Exception as e:
@@ -323,79 +327,141 @@ def text_to_speech(text: str):
         return None
 
 # =====================================================
-# VOICE MODE (with preview)
+# PLAY AUDIO
+# =====================================================
+
+def play_audio(speech_file):
+
+    if not speech_file:
+        return
+
+    try:
+
+        with open(speech_file, "rb") as audio_file:
+            audio_bytes = audio_file.read()
+
+        st.audio(
+            audio_bytes,
+            format="audio/mp3",
+            autoplay=True
+        )
+
+    except Exception as e:
+
+        st.error(f"Audio playback error: {e}")
+
+# =====================================================
+# VOICE MODE
 # =====================================================
 
 if not chat_mode:
 
     st.subheader("🎤 Voice Input")
 
-    # ---------- 1. Show audio recorder ----------
-    # The dynamic key allows us to completely reset the widget after deletion
     audio_bytes = st.audio_input(
         "Speak",
         key=f"voice_recorder_{st.session_state.audio_input_key}"
     )
 
-    # ---------- 2. New recording detected ----------
+    # ---------- New Recording ----------
     if audio_bytes is not None and not st.session_state.audio_preview_active:
-        # Save the recording in session state and activate preview
+
         st.session_state.recorded_audio = audio_bytes
         st.session_state.audio_preview_active = True
-        st.rerun()  # immediately show preview UI
+        st.rerun()
 
-    # ---------- 3. Preview UI ----------
-    if st.session_state.audio_preview_active and st.session_state.recorded_audio is not None:
+    # ---------- Preview Section ----------
+    if (
+        st.session_state.audio_preview_active
+        and st.session_state.recorded_audio is not None
+    ):
 
-        st.markdown("**🔍 Preview your recording:**")
-        # Let the user listen to the recorded audio
-        st.audio(st.session_state.recorded_audio, format="audio/wav")
+        st.markdown("### 🔍 Preview Recording")
+
+        st.audio(
+            st.session_state.recorded_audio,
+            format="audio/wav"
+        )
 
         col1, col2 = st.columns(2)
 
+        # =================================================
+        # SEND TO AI
+        # =================================================
+
         with col1:
-            if st.button("✅ Send to AI", type="primary", use_container_width=True):
-                # Process the audio: transcribe → generate → TTS
-                with st.spinner("Transcribing..."):
+
+            if st.button(
+                "✅ Send to AI",
+                type="primary",
+                use_container_width=True
+            ):
+
+                with st.spinner("Transcribing audio..."):
+
                     try:
-                        # Save the bytes to a temporary file for the Whisper API
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-                            f.write(st.session_state.recorded_audio.getbuffer())
+
+                        # Save temporary wav
+                        with tempfile.NamedTemporaryFile(
+                            delete=False,
+                            suffix=".wav"
+                        ) as f:
+
+                            f.write(
+                                st.session_state.recorded_audio.getbuffer()
+                            )
+
                             audio_path = f.name
 
+                        # Whisper transcription
                         with open(audio_path, "rb") as audio_file:
+
                             transcription = client.audio.transcriptions.create(
                                 model="whisper-1",
                                 file=audio_file,
                                 language="en"
                             )
+
                         user_text = transcription.text.strip()
 
                         if user_text:
-                            st.info(f"You said: {user_text}")
-                            ai_text = generate_response(user_text)
-                            if ai_text:
-                                speech_file = text_to_speech(ai_text)
-                                if speech_file:
-                                    st.audio(speech_file, format="audio/mp3")
-                    except Exception as e:
-                        st.error(f"Transcription Error: {e}")
 
-                # Clean up preview state
+                            st.info(f"You said: {user_text}")
+
+                            ai_text = generate_response(user_text)
+
+                            if ai_text:
+
+                                speech_file = text_to_speech(ai_text)
+
+                                play_audio(speech_file)
+
+                    except Exception as e:
+
+                        st.error(f"Voice processing error: {e}")
+
+                # Reset state
                 st.session_state.audio_preview_active = False
                 st.session_state.recorded_audio = None
+
                 st.rerun()
+
+        # =================================================
+        # DELETE RECORDING
+        # =================================================
 
         with col2:
-            if st.button("🗑️ Delete & Re-record", use_container_width=True):
-                # Discard the recording and reset the audio widget
+
+            if st.button(
+                "🗑️ Delete & Re-record",
+                use_container_width=True
+            ):
+
                 st.session_state.audio_preview_active = False
                 st.session_state.recorded_audio = None
-                # Increment key to force a completely fresh audio_input widget
                 st.session_state.audio_input_key += 1
-                st.rerun()
 
-    # If no preview is active, just keep showing the recorder (already rendered above)
+                st.rerun()
 
 # =====================================================
 # CHAT MODE
@@ -412,7 +478,11 @@ else:
 
     send_btn = st.button("Send")
 
-    if send_btn and user_text and not st.session_state.processing:
+    if (
+        send_btn
+        and user_text
+        and not st.session_state.processing
+    ):
 
         ai_text = generate_response(user_text)
 
@@ -420,8 +490,7 @@ else:
 
             speech_file = text_to_speech(ai_text)
 
-            if speech_file:
-                st.audio(speech_file, format="audio/mp3")
+            play_audio(speech_file)
 
 # =====================================================
 # CHAT HISTORY
