@@ -170,6 +170,7 @@ with st.sidebar:
 
         st.session_state.history = []
         st.session_state.last_input = ""
+        st.session_state.latest_audio = None
 
         st.rerun()
 
@@ -204,6 +205,10 @@ if "recorded_audio" not in st.session_state:
 
 if "audio_input_key" not in st.session_state:
     st.session_state.audio_input_key = 0
+
+# NEW
+if "latest_audio" not in st.session_state:
+    st.session_state.latest_audio = None
 
 # =====================================================
 # HEADER
@@ -340,11 +345,7 @@ def play_audio(speech_file):
         with open(speech_file, "rb") as audio_file:
             audio_bytes = audio_file.read()
 
-        st.audio(
-            audio_bytes,
-            format="audio/mp3",
-            autoplay=True
-        )
+        st.session_state.latest_audio = audio_bytes
 
     except Exception as e:
 
@@ -368,6 +369,7 @@ if not chat_mode:
 
         st.session_state.recorded_audio = audio_bytes
         st.session_state.audio_preview_active = True
+
         st.rerun()
 
     # ---------- Preview Section ----------
@@ -444,8 +446,6 @@ if not chat_mode:
                 st.session_state.audio_preview_active = False
                 st.session_state.recorded_audio = None
 
-                st.rerun()
-
         # =================================================
         # DELETE RECORDING
         # =================================================
@@ -491,6 +491,18 @@ else:
             speech_file = text_to_speech(ai_text)
 
             play_audio(speech_file)
+
+# =====================================================
+# AUDIO PLAYER
+# =====================================================
+
+if st.session_state.latest_audio:
+
+    st.audio(
+        st.session_state.latest_audio,
+        format="audio/mp3",
+        autoplay=True
+    )
 
 # =====================================================
 # CHAT HISTORY
